@@ -4,8 +4,10 @@ import javax.swing.*;
 
 /*
  * BUGS:
- * - Bishops have trouble moving to their relative diagonal right,
+ * - (FIXED) Bishops have trouble moving to their relative diagonal right,
  *   even when not blocked by anything.
+ * - Weird bug: set whiteTurn to false initially for white to start...
+ *   The boolean is getting flipped somewhere.
  */
 
 /*
@@ -34,7 +36,7 @@ public class Chess {
 		// Construct chess board
 		board = new Piece[8][8];
 		buildBoard(board);
-		whiteTurn = true;
+		whiteTurn = false;
 		
 		// Initialize the frame
 		JFrame window = new JFrame();
@@ -107,35 +109,72 @@ public class Chess {
 		
 		// Set x and y respectively to the lower values for purposes of looping,
 		// Set stopx and stopy to the higher values.
-		int x = 	(xfrom < xto) ? xfrom+1 : xto;
-		int stopx = (xfrom < xto) ? xto : xfrom;
-		int y = 	(yfrom < yto) ? yfrom+1 : yto;
-		int stopy = (yfrom < yto) ? yto : yfrom;
+//		int x = 	(xfrom < xto) ? xfrom+1 : xto;
+//		int stopx = (xfrom < xto) ? xto : xfrom;
+//		int y = 	(yfrom < yto) ? yfrom+1 : yto;
+//		int stopy = (yfrom < yto) ? yto : yfrom;
+		
+		int x = xfrom;
+		int xstop = xto;
+		int y = yfrom;
+		int ystop = yto;
+		
+		int xinc = (x < xstop) ? 1 : -1;
+		int yinc = (y < ystop) ? 1 : -1;
 		
 		Piece to = board[yto][xto];
-		
+		Piece from = board[yfrom][xfrom];
+	
 		if (xfrom == xto) {
 			// x is constant, check in y direction
-			// xfrom:0 yfrom:6 xto:0 yto:5
-			for (; y < stopy; y++) {
-				if (board[y][x] != null && board[y][x] != to) {
-					return false;
+			if (y <= ystop) {
+				for (; y <= ystop; y += yinc) {
+					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
+						return false;
+					}
+				}
+			} else {
+				for (; y >= ystop; y += yinc) {
+					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
+						return false;
+					}
 				}
 			}
 		} else if (yfrom == yto) {
 			// y is constant, check in x direction
-			for (; x < stopx; x++) {
-				if (board[y][x] != null && board[y][x] != to) {
-					return false;
+			if (x <= xstop) {
+				for (; x <= xstop; x += xinc) {
+					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
+						return false;
+					}
+				}
+			} else {
+				for (; x >= xstop; x += xinc) {
+					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
+						return false;
+					}
 				}
 			}
 		} else if (Math.abs(xfrom - xto) == Math.abs(yfrom - yto)){
 			// the move is diagonal
-			for (; y < stopy; y++) {
-				if (board[y][x] != null && board[y][x] != to) {
-					return false;
+			if (y <= ystop) {
+				for (; y <= ystop; y += yinc) {
+					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
+						// Relative right diagonal bug: incrementing values incorrectly
+						// such that it checks the wrong space for blocking
+						return false;
+					}
+					x += xinc;
 				}
-				x++;
+			} else {
+				for (; y >= ystop; y += yinc) {
+					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
+						// Relative right diagonal bug: incrementing values incorrectly
+						// such that it checks the wrong space for blocking
+						return false;
+					}
+					x += xinc;
+				}
 			}
 		}
 		return true;
@@ -310,8 +349,6 @@ public class Chess {
 		testFor(true, move(testBoard, 4, 1, 4, 2), "King can't move forward one space");
 		testFor(true, move(testBoard, 3, 2, 5, 3), "Knight can't make valid move");
 		testFor(true, move(testBoard, 5, 0, 1, 4), "Bishop can't move relative right diagonal");
-		
-		System.out.println("All testing complete. Errors found (if any):");
 		
 		testing = false;
 	}
