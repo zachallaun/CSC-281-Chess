@@ -7,6 +7,9 @@ public abstract class Piece {
 	public String str;
 	public ImageIcon img;
 	
+	// Set to false after a piece's first move
+	public boolean firstMove = false;
+	
 	abstract boolean validMove(int xfrom, int yfrom, int xto, int yto, boolean capture);
 	
 	static boolean isDiagonal(int xfrom, int yfrom, int xto, int yto) {
@@ -44,7 +47,7 @@ class Pawn extends Piece {
 	@Override
 	boolean validMove(int xfrom, int yfrom, int xto, int yto, boolean capture) {
 		return (this.validDirection(yfrom, yto) &&			// Pawns move in the (relatively) positive direction.
-				(Math.abs(yto - yfrom) <= this.yLimit(yfrom)) &&				// They only move 1 space forward in the y.
+				(Math.abs(yto - yfrom) <= this.yLimit(yfrom)) &&	// They only move 1 space forward in the y.
 				((capture && Math.abs(xto - xfrom) == 1) ||	// It is a capture, and the move is diagonal by 1.
 						(!capture && xfrom == xto)));		// It isn't a capture, and the piece moves only forward.
 	}

@@ -6,7 +6,7 @@ import javax.swing.*;
  * BUGS:
  * - (FIXED) Bishops have trouble moving to their relative diagonal right,
  *   even when not blocked by anything.
- * - Weird bug: set whiteTurn to false initially for white to start...
+ * - Set whiteTurn to false initially for white to start...
  *   The boolean is getting flipped somewhere.
  */
 
@@ -31,7 +31,7 @@ public class Chess {
 	
 	private static boolean whiteTurn;
 	private static boolean testing;
-
+	
 	public static void main(String[] args) {
 		// Construct chess board
 		board = new Piece[8][8];
@@ -81,6 +81,7 @@ public class Chess {
 			board[yfrom][xfrom] = null;
 			bc.repaint();
 			whiteTurn = !whiteTurn;
+			from.firstMove = false;
 			return true;
 		} else {
 			return false;
@@ -100,6 +101,15 @@ public class Chess {
 				notBlocked(board, xfrom, yfrom, xto, yto));				// the piece is not blocked
 	}
 	
+//	private static boolean castleMove(Piece[][] board, Piece from, Piece to, boolean capture,
+//									  int xfrom, int yfrom, int xto, int yto) {
+//		
+//		return (from != null &&
+//				correctTurn(from.white) &&
+//				from.validMove(xfrom, yfrom, xto, yto, capture) &&
+//				)
+//	}
+	
 	// Testing flag turns off correctTurn validations
 	private static boolean correctTurn(boolean white) {
 		return (testing) ? true : white == whiteTurn;
@@ -107,77 +117,30 @@ public class Chess {
 	
 	private static boolean notBlocked(Piece[][] board, int xfrom, int yfrom, int xto, int yto) {
 		
-		// Set x and y respectively to the lower values for purposes of looping,
-		// Set stopx and stopy to the higher values.
-//		int x = 	(xfrom < xto) ? xfrom+1 : xto;
-//		int stopx = (xfrom < xto) ? xto : xfrom;
-//		int y = 	(yfrom < yto) ? yfrom+1 : yto;
-//		int stopy = (yfrom < yto) ? yto : yfrom;
-		
-		int x = xfrom;
-		int xstop = xto;
-		int y = yfrom;
-		int ystop = yto;
-		
-		int xinc = (x < xstop) ? 1 : -1;
-		int yinc = (y < ystop) ? 1 : -1;
-		
-		Piece to = board[yto][xto];
 		Piece from = board[yfrom][xfrom];
-	
-		if (xfrom == xto) {
-			// x is constant, check in y direction
-			if (y <= ystop) {
-				for (; y <= ystop; y += yinc) {
-					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
-						return false;
-					}
-				}
-			} else {
-				for (; y >= ystop; y += yinc) {
-					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
-						return false;
-					}
-				}
-			}
-		} else if (yfrom == yto) {
-			// y is constant, check in x direction
-			if (x <= xstop) {
-				for (; x <= xstop; x += xinc) {
-					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
-						return false;
-					}
-				}
-			} else {
-				for (; x >= xstop; x += xinc) {
-					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
-						return false;
-					}
-				}
-			}
-		} else if (Math.abs(xfrom - xto) == Math.abs(yfrom - yto)){
-			// the move is diagonal
-			if (y <= ystop) {
-				for (; y <= ystop; y += yinc) {
-					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
-						// Relative right diagonal bug: incrementing values incorrectly
-						// such that it checks the wrong space for blocking
-						return false;
-					}
-					x += xinc;
-				}
-			} else {
-				for (; y >= ystop; y += yinc) {
-					if (board[y][x] != null && board[y][x] != to && board[y][x] != from) {
-						// Relative right diagonal bug: incrementing values incorrectly
-						// such that it checks the wrong space for blocking
-						return false;
-					}
-					x += xinc;
+		Piece to = board[yto][xto];
+		
+		// Determine the direction (if any) of x and y movement
+		int dx = (xfrom < xto) ? 1 : ((xfrom == xto) ? 0 : -1);
+		int dy = (yfrom < yto) ? 1 : ((yfrom == yto) ? 0 : -1);
+		
+		// Determine the number of times we must iterate
+		int steps = Math.max(Math.abs(xfrom - xto), Math.abs(yfrom - yto));
+		
+		if (xfrom == xto || yfrom == yto || Math.abs(xfrom - xto) == Math.abs(yfrom - yto)) {
+			for (int i = 1; i < steps; i++) {
+				int x = xfrom + i * dx;
+				int y = yfrom + i * dy;
+				if (isBlocked(board, from, to, x, y)) {
+					return false;
 				}
 			}
 		}
 		return true;
+	}
+	
+	private static boolean isBlocked(Piece[][] board, Piece from, Piece to, int x, int y) {
+		return (board[y][x] != null && board[y][x] != to && board[y][x] != from);
 	}
 	
 	private static MouseListener genBoardMouseListener() {
@@ -187,12 +150,15 @@ public class Chess {
 			
 			@Override
 			public void mousePressed(MouseEvent e) {
+				// Overwrite previous x and y from values
 				this.xfrom = e.getX();
 				this.yfrom = e.getY();
 			}
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
+				// Pass mouse from and to coordinates to Chess to handle
+				// validation and moves
 				int xto = e.getX();
 				int yto = e.getY();
 				int xfrom = this.xfrom;
@@ -354,6 +320,7 @@ public class Chess {
 	}
 	
 	private static void testFor(boolean expects, boolean test, String errorMsg) {
+		// Small helper function for nice-looking tests
 		if (!(expects == test)) {
 			System.err.println("Failure: "+errorMsg);
 		}
