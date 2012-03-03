@@ -8,6 +8,7 @@ import javax.swing.*;
  *   even when not blocked by anything.
  * - (FIXED) Set whiteTurn to false initially for white to start...
  *   The boolean is getting flipped somewhere.
+ * - (FIXED) Pawns can capture sideways
  */
 
 /*
@@ -151,13 +152,13 @@ public class Chess {
 	private static boolean kingAvoidsCheck(Piece[][] board, Piece piece, int xfrom, int yfrom, int xto, int yto) {
 		// Returns true if the given piece could move to board[yto][xto] without
 		// encountering check.
-//		Piece[][] boardCopy = board.clone();
 		Piece[][] team = getTeam(board, piece.white);
 		Piece[][] opps = getTeam(board, !piece.white);
 		int[] king = getKing(team);
 		
 		boolean ret = true;
 		
+		Piece old = board[yto][xto];
 		board[yto][xto] = piece;
 		board[yfrom][xfrom] = null;
 		
@@ -179,7 +180,7 @@ public class Chess {
 		}
 		
 		board[yfrom][xfrom] = piece;
-		board[yto][xto] = null;
+		board[yto][xto] = old;
 		
 		return ret;
 	}
@@ -429,8 +430,6 @@ public class Chess {
 		testFor(true, move(testBoard, 6, 6, 6, 5), "Pawn can't move forward one space");
 		testFor(true, move(testBoard, 5, 7, 6, 6), "Bishop can't move diagnonally");
 		testFor(true, move(testBoard, 4, 7, 7, 7), "King can't castle rook");
-		
-		printBoard(getTeam(testBoard, true));
 		
 		//
 		// Reset globals

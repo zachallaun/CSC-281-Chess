@@ -46,10 +46,13 @@ class Pawn extends Piece {
 	
 	@Override
 	boolean validMove(int xfrom, int yfrom, int xto, int yto, boolean capture) {
-		return (this.validDirection(yfrom, yto) &&			// Pawns move in the (relatively) positive direction.
-				(Math.abs(yto - yfrom) <= this.yLimit(yfrom)) &&	// They only move 1 space forward in the y.
-				((capture && Math.abs(xto - xfrom) == 1) ||	// It is a capture, and the move is diagonal by 1.
-						(!capture && xfrom == xto)));		// It isn't a capture, and the piece moves only forward.
+		return (this.validDirection(yfrom, yto) &&			// Pawns move only forward.
+				((this.firstMove) ?								// Is this the pawn's first move?
+					((Math.abs(yto - yfrom) == 2) ||				// Then it can move 2 spaces forward
+						Math.abs(yto - yfrom) == 1) : 					// or one space
+					(Math.abs(yto-yfrom) == 1)) &&					// Otherwise just one space
+				((capture && Math.abs(xto - xfrom) == 1) ||	// It's a capture, and the move is diagonal by 1
+						(!capture && xfrom == xto)));			// or it's not, and the move is only forward
 	}
 	
 	private int yLimit(int yfrom) {
