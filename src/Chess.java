@@ -6,14 +6,12 @@ import javax.swing.*;
  * BUGS:
  * - (FIXED) Bishops have trouble moving to their relative diagonal right,
  *   even when not blocked by anything.
- * - Set whiteTurn to false initially for white to start...
+ * - (FIXED) Set whiteTurn to false initially for white to start...
  *   The boolean is getting flipped somewhere.
  */
 
 /*
  * TODO:
- * - King cannot move into check.
- * - If in check, King must move out of check.
  * - Game can "see" a check-mate and end the game.
  * - Game is stateful: has a MENU, GAMEMODE, and RESTARTMODE
  * - Basic random AI
@@ -119,17 +117,18 @@ public class Chess {
 		}
 	}
 	
-	// Validates a standard move given a slew of input.
-	// A standard move follows the general rules of chess, as opposed to fleeing check
-	// or castling a King and Rook, which require alternate validations.
 	private static boolean standardMove(Piece[][] board, Piece from, Piece to, boolean capture,
 										int xfrom, int yfrom, int xto, int yto) {
+		// Validates a standard move given a slew of input.
+		// A standard move follows the general rules of chess, as opposed to fleeing check
+		// or castling a King and Rook, which require alternate validations.
 		
 		return (from != null &&											// from isn't null
 				correctTurn(from.white) &&								// correct player's turn
 				from.validMove(xfrom, yfrom, xto, yto, capture) && 		// valid move for that piece
 				(!capture || from.white != to.white) && 				// moving to valid position
-				notBlocked(board, xfrom, yfrom, xto, yto));				// the piece is not blocked
+				notBlocked(board, xfrom, yfrom, xto, yto) &&			// the piece is not blocked
+				kingAvoidsCheck(board, from, xfrom, yfrom, xto, yto));
 	}
 	
 	private static boolean castleMove(Piece[][] board, Piece from, Piece to, boolean capture,
@@ -144,12 +143,88 @@ public class Chess {
 				notBlocked(board, xfrom, yfrom, xto, yto));				// and there is nothing blocking them.
 	}
 	
-	// Testing flag turns off correctTurn validations
 	private static boolean correctTurn(boolean white) {
+		// Testing flag turns off correctTurn validations
 		return (testing) ? true : white == whiteTurn;
 	}
 	
+	private static boolean kingAvoidsCheck(Piece[][] board, Piece piece, int xfrom, int yfrom, int xto, int yto) {
+		// Returns true if the given piece could move to board[yto][xto] without
+		// encountering check.
+//		Piece[][] boardCopy = board.clone();
+		Piece[][] team = getTeam(board, piece.white);
+		Piece[][] opps = getTeam(board, !piece.white);
+		int[] king = getKing(team);
+		
+		boolean ret = true;
+		
+		board[yto][xto] = piece;
+		board[yfrom][xfrom] = null;
+		
+		if (piece instanceof King) {
+			king[0] = yto;
+			king[1] = xto;
+		}
+		
+		for (int i = 0; i < opps.length; i++) {
+			for (int j = 0; j < opps.length; j++) {
+				Piece opp = opps[i][j];
+				
+				if (opp != null && 
+					opp.validMove(j, i, king[1], king[0], true) &&
+					notBlocked(board, j, i, king[1], king[0])) {
+					ret = false;
+				}
+			}
+		}
+		
+		board[yfrom][xfrom] = piece;
+		board[yto][xto] = null;
+		
+		return ret;
+	}
+	
+	private static int[] getKing(Piece[][] team) {
+		// Returns the King on the given team.
+		// Expects a single team, not the entire board.
+		// Returns null if a King can't be found.
+		
+		for (int i = 0; i < team.length; i++) {
+			for (int j = 0; j < team.length; j++) {
+				Piece piece = team[i][j];
+				
+				if (piece != null && piece instanceof King) {
+					return new int[] {i, j};
+				}
+			}
+		}
+		
+		for (Piece[] row : team) {
+			for (Piece piece : row) {
+				if (piece != null && piece instanceof King) {
+				}
+			}
+		}
+		return null;
+	}
+	
+	private static Piece[][] getTeam(Piece[][] board, boolean white) {
+		// Returns the opponents of the given color in their current positions
+		Piece[][] team = new Piece[8][8];
+		
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board.length; j++) {
+				Piece piece = board[i][j];
+				team[i][j] = (piece != null && piece.white == white) ? piece : null;
+			}
+		}
+		
+		return team;
+	}
+	
 	private static boolean notBlocked(Piece[][] board, int xfrom, int yfrom, int xto, int yto) {
+		// Returns true if the entire path from the origin to the destination is clear.
+		// (This excepts knights, which can move over teammates and enemies.)
 		
 		Piece from = board[yfrom][xfrom];
 		Piece to = board[yto][xto];
@@ -354,6 +429,8 @@ public class Chess {
 		testFor(true, move(testBoard, 6, 6, 6, 5), "Pawn can't move forward one space");
 		testFor(true, move(testBoard, 5, 7, 6, 6), "Bishop can't move diagnonally");
 		testFor(true, move(testBoard, 4, 7, 7, 7), "King can't castle rook");
+		
+		printBoard(getTeam(testBoard, true));
 		
 		//
 		// Reset globals
