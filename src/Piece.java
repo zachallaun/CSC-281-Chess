@@ -8,7 +8,7 @@ public abstract class Piece {
 	public ImageIcon img;
 	
 	// Set to false after a piece's first move
-	public boolean firstMove = false;
+	public boolean firstMove = true;
 	
 	abstract boolean validMove(int xfrom, int yfrom, int xto, int yto, boolean capture);
 	

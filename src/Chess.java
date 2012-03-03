@@ -52,6 +52,7 @@ public class Chess {
 		
 		// Tests grow strong bones
 		tests();
+		testing = true;
 		
 		// LAST
 		window.setVisible(true);
@@ -76,10 +77,41 @@ public class Chess {
 		Piece to = board[yto][xto];
 		boolean capture = (to != null);
 		
+//		if (castleMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
+//			int kDest, rDest;
+//			boolean fromKing;
+//			if (from instanceof King) {
+//				fromKing = true;
+//				kDest = (xto == 7) ? 6 : 2;
+//				rDest = (xto == 7) ? 5 : 3;
+//			} else {
+//				fromKing = false;
+//				kDest = (xfrom == 7) ? 6 : 2;
+//				rDest = (xfrom == 7) ? 5 : 3;
+//			}
+//			
+//			board[yfrom][xfrom] = null;
+//			board[yto][xto] = null;
+//			
+//			board[yfrom][kDest] = (fromKing) ? from : to;
+//			board[yto][rDest] = (fromKing) ? to : from;
+//			
+//			whiteTurn = !whiteTurn;
+//			from.firstMove = false;
+//			to.firstMove = false;
+//			return true;
 		if (standardMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
-			board[yto][xto] = from;
-			board[yfrom][xfrom] = null;
+			if (from instanceof Pawn && yto == ((from.white) ? 7 : 0)) {
+				board[yfrom][xfrom] = null;
+				board[yto][xto] = new Queen(from.white);
+			} else {
+				board[yfrom][xfrom] = null;
+				board[yto][xto] = from;
+			}
+			
 			bc.repaint();
+			
+			// Switch turns and set moved piece's firstMove bool to false 
 			whiteTurn = !whiteTurn;
 			from.firstMove = false;
 			return true;
@@ -101,14 +133,17 @@ public class Chess {
 				notBlocked(board, xfrom, yfrom, xto, yto));				// the piece is not blocked
 	}
 	
-//	private static boolean castleMove(Piece[][] board, Piece from, Piece to, boolean capture,
-//									  int xfrom, int yfrom, int xto, int yto) {
-//		
-//		return (from != null &&
-//				correctTurn(from.white) &&
-//				from.validMove(xfrom, yfrom, xto, yto, capture) &&
-//				)
-//	}
+	private static boolean castleMove(Piece[][] board, Piece from, Piece to, boolean capture,
+									  int xfrom, int yfrom, int xto, int yto) {
+		
+		return (from != null && to != null &&
+				correctTurn(from.white) &&
+				from.white == to.white &&		
+				(from instanceof King && to instanceof Rook || 
+						from instanceof Rook && to instanceof King) &&
+				from.firstMove && to.firstMove &&
+				notBlocked(board, xfrom, yfrom, xto, yto));
+	}
 	
 	// Testing flag turns off correctTurn validations
 	private static boolean correctTurn(boolean white) {
@@ -316,6 +351,8 @@ public class Chess {
 		testFor(true, move(testBoard, 3, 2, 5, 3), "Knight can't make valid move");
 		testFor(true, move(testBoard, 5, 0, 1, 4), "Bishop can't move relative right diagonal");
 		
+		// Reset globals
+		whiteTurn = true;
 		testing = false;
 	}
 	
