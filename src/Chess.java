@@ -12,8 +12,6 @@ import javax.swing.*;
 
 /*
  * TODO:
- * - Pawn swaps for queen when it makes it to opponent's back row.
- * - King and Rook can castle if proper conditions are met.
  * - King cannot move into check.
  * - If in check, King must move out of check.
  * - Game can "see" a check-mate and end the game.
@@ -52,7 +50,6 @@ public class Chess {
 		
 		// Tests grow strong bones
 		tests();
-		testing = true;
 		
 		// LAST
 		window.setVisible(true);
@@ -77,30 +74,32 @@ public class Chess {
 		Piece to = board[yto][xto];
 		boolean capture = (to != null);
 		
-//		if (castleMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
-//			int kDest, rDest;
-//			boolean fromKing;
-//			if (from instanceof King) {
-//				fromKing = true;
-//				kDest = (xto == 7) ? 6 : 2;
-//				rDest = (xto == 7) ? 5 : 3;
-//			} else {
-//				fromKing = false;
-//				kDest = (xfrom == 7) ? 6 : 2;
-//				rDest = (xfrom == 7) ? 5 : 3;
-//			}
-//			
-//			board[yfrom][xfrom] = null;
-//			board[yto][xto] = null;
-//			
-//			board[yfrom][kDest] = (fromKing) ? from : to;
-//			board[yto][rDest] = (fromKing) ? to : from;
-//			
-//			whiteTurn = !whiteTurn;
-//			from.firstMove = false;
-//			to.firstMove = false;
-//			return true;
-		if (standardMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
+		if (castleMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
+			int kDest, rDest;
+			boolean fromKing;
+			if (from instanceof King) {
+				fromKing = true;
+				kDest = (xto == 7) ? 6 : 2;
+				rDest = (xto == 7) ? 5 : 3;
+			} else {
+				fromKing = false;
+				kDest = (xfrom == 7) ? 6 : 2;
+				rDest = (xfrom == 7) ? 5 : 3;
+			}
+			
+			board[yfrom][xfrom] = null;
+			board[yto][xto] = null;
+			
+			board[yfrom][kDest] = (fromKing) ? from : to;
+			board[yto][rDest] = (fromKing) ? to : from;
+			
+			bc.repaint();
+			
+			whiteTurn = !whiteTurn;
+			from.firstMove = false;
+			to.firstMove = false;
+			return true;
+		} else if (standardMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
 			if (from instanceof Pawn && yto == ((from.white) ? 7 : 0)) {
 				board[yfrom][xfrom] = null;
 				board[yto][xto] = new Queen(from.white);
@@ -136,13 +135,13 @@ public class Chess {
 	private static boolean castleMove(Piece[][] board, Piece from, Piece to, boolean capture,
 									  int xfrom, int yfrom, int xto, int yto) {
 		
-		return (from != null && to != null &&
-				correctTurn(from.white) &&
-				from.white == to.white &&		
-				(from instanceof King && to instanceof Rook || 
+		return (from != null && to != null &&		
+				correctTurn(from.white) &&								// A valid castle move:
+				from.white == to.white &&								// From and to are same color,
+				(from instanceof King && to instanceof Rook || 			// a king and rook are switching,
 						from instanceof Rook && to instanceof King) &&
-				from.firstMove && to.firstMove &&
-				notBlocked(board, xfrom, yfrom, xto, yto));
+				from.firstMove && to.firstMove &&						// it is both pieces' first move,
+				notBlocked(board, xfrom, yfrom, xto, yto));				// and there is nothing blocking them.
 	}
 	
 	// Testing flag turns off correctTurn validations
@@ -259,11 +258,11 @@ public class Chess {
 	}
 	
 	private static void tests() {
+		testing = true;
+		
 		//
 		// Tests for Piece-level validations
 		//
-		testing = true;
-		
 		Pawn pawn = new Pawn(true);
 		System.out.println("PAWN TESTS RUNNING...");
 		testFor(true, pawn.validMove(0, 0, 1, 1, true), "Pawn can't diagonally capture");
@@ -351,7 +350,14 @@ public class Chess {
 		testFor(true, move(testBoard, 3, 2, 5, 3), "Knight can't make valid move");
 		testFor(true, move(testBoard, 5, 0, 1, 4), "Bishop can't move relative right diagonal");
 		
+		// Test castling
+		testFor(true, move(testBoard, 6, 6, 6, 5), "Pawn can't move forward one space");
+		testFor(true, move(testBoard, 5, 7, 6, 6), "Bishop can't move diagnonally");
+		testFor(true, move(testBoard, 4, 7, 7, 7), "King can't castle rook");
+		
+		//
 		// Reset globals
+		//
 		whiteTurn = true;
 		testing = false;
 	}
