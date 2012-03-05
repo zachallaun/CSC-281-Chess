@@ -9,6 +9,7 @@ import javax.swing.*;
  * - (FIXED) Set whiteTurn to false initially for white to start...
  *   The boolean is getting flipped somewhere.
  * - (FIXED) Pawns can capture sideways
+ * - King can't take bishop next to it
  */
 
 /*

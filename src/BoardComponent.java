@@ -1,17 +1,20 @@
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import javax.swing.JComponent;
 
 public class BoardComponent extends JComponent {
 	
-	static Color dark;
-	static Color light;
+	static Color dark, light, red;
+	static Font font;
 	
 	static int xy, height, width;
 	
 	public BoardComponent() {
 		dark = new Color(102, 130, 132);
 		light = new Color(185, 215, 217);
+		red = new Color(200, 59, 59);
+		font = new Font("Helvetica", Font.BOLD, 36);
 		
 		xy = Chess.PIECE_XY;
 		height = Chess.HEIGHT;
@@ -19,12 +22,15 @@ public class BoardComponent extends JComponent {
 	}
 	
 	public void paintComponent(Graphics g) {
-		g.setColor(new Color(123, 59, 59));
+		g.setColor(red);
 		g.fillRect(0, 0, Chess.WIDTH, Chess.HEIGHT);
 		
 		paintCheckers(g);
 		paintPieces(g);
-//		g.drawImage(Chess.board[1][0].img.getImage(), 100, 100, null);
+		
+//		g.setColor(red);
+//		g.setFont(font);
+//		g.drawString("Invalid", 50, Chess.HEIGHT / 2);
 	}
 	
 	private static void paintPieces(Graphics g) {
