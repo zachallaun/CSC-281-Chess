@@ -9,7 +9,7 @@ import javax.swing.*;
  * - (FIXED) Set whiteTurn to false initially for white to start...
  *   The boolean is getting flipped somewhere.
  * - (FIXED) Pawns can capture sideways
- * - King can't take bishop next to it
+ * - (FIXED) THE KING CAN'T DEFEND HIMSELF!!! NOOOOO
  */
 
 /*
@@ -154,7 +154,6 @@ public class Chess {
 		// Returns true if the given piece could move to board[yto][xto] without
 		// encountering check.
 		Piece[][] team = getTeam(board, piece.white);
-		Piece[][] opps = getTeam(board, !piece.white);
 		int[] king = getKing(team);
 		
 		boolean ret = true;
@@ -167,6 +166,9 @@ public class Chess {
 			king[0] = yto;
 			king[1] = xto;
 		}
+		
+		// Declare opponents after the board is temporarily modified
+		Piece[][] opps = getTeam(board, !piece.white);
 		
 		for (int i = 0; i < opps.length; i++) {
 			for (int j = 0; j < opps.length; j++) {
