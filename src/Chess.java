@@ -1,4 +1,16 @@
-// CHESS - Zach Allaun
+/* Project 1: Chess
+ * Author: Zach Allaun
+ * 
+ * Completed milestones:
+ * 1) Board setup
+ * 2) Display of the pieces
+ * 3) Moving pieces
+ * 4) Validating moves - Every move but en passant has validations,
+ *    including castling and pawn promotion. Furthermore, the game
+ *    verifies that Kings move out of check if in it, and prevent them
+ *    from moving into check.
+ * 5) Random computer player
+ */
 
 /*
  * USAGE:
