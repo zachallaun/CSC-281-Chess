@@ -51,13 +51,11 @@ public class BoardComponent extends JComponent {
 			for (int y = 0; y < height; y += xy) {
 				if (swap) {
 					g.setColor(dark);
-					g.fillRect(x, y, xy, xy);
-					swap = !swap;
 				} else {
 					g.setColor(light);
-					g.fillRect(x, y, xy, xy);
-					swap = !swap;
 				}
+				g.fillRect(x, y, xy, xy);
+				swap = !swap;
 			}
 		}
 		

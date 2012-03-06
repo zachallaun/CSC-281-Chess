@@ -54,18 +54,19 @@ class Pawn extends Piece {
 				((capture && Math.abs(xto - xfrom) == 1) ||	// It's a capture, and the move is diagonal by 1
 						(!capture && xfrom == xto)));			// or it's not, and the move is only forward
 	}
-	
-	private int yLimit(int yfrom) {
-		return (this.onHomeRow(yfrom)) ? 2 : 1;
-	}
 
 	private boolean validDirection(int yfrom, int yto) {
 		return (this.white) ? (yfrom <= yto) : (yto <= yfrom);
 	}
 	
-	private boolean onHomeRow(int yfrom) {
-		return (this.white) ? (yfrom == 1) : (yfrom == 6);
-	}
+//	// Currently unused:
+//	private int yLimit(int yfrom) {
+//		return (this.onHomeRow(yfrom)) ? 2 : 1;
+//	}
+//	
+//	private boolean onHomeRow(int yfrom) {
+//		return (this.white) ? (yfrom == 1) : (yfrom == 6);
+//	}
 }
 
 class King extends Piece {

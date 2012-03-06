@@ -1,6 +1,13 @@
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import javax.swing.*;
+// CHESS - Zach Allaun
+
+/*
+ * USAGE:
+ * - White moves first. All moves should be supported, with the exception of en passant.
+ * - The game will prevent a King from moving into check, and will require the King be moved
+ *   out of check, but will not verify a checkmate. For now, the players will have to do that.
+ * - To play against a completely stupid AI, set 'public static boolean AI' to true. Prepare
+ *   to be incredibly bored, as the random AI makes completely nonsensical moves.
+ */
 
 /*
  * BUGS:
@@ -14,27 +21,36 @@ import javax.swing.*;
 
 /*
  * TODO:
+ * - Write tests for bugs fixed
  * - Game can "see" a check-mate and end the game.
  * - Game is stateful: has a MENU, GAMEMODE, and RESTARTMODE
- * - Basic random AI
  * - Smart AI
  */
 
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import javax.swing.*;
+
 public class Chess {
 	
-	public static final int PIECE_XY = 44;
-	public static final int WIDTH = PIECE_XY*8, HEIGHT = PIECE_XY*8 + 22; 
+	// Environment variables
 	public static Piece[][] board;
 	public static BoardComponent bc;
+	public static final int PIECE_XY = 44;
+	public static final int WIDTH = PIECE_XY*8, HEIGHT = PIECE_XY*8 + 22; 
 	
+	// Game mechanic variables
 	private static boolean whiteTurn;
 	private static boolean testing;
+	
+	// AI - AI plays as the black army, player moves first
+	public static boolean AI = false;
 	
 	public static void main(String[] args) {
 		// Construct chess board
 		board = new Piece[8][8];
 		buildBoard(board);
-		whiteTurn = false;
+		whiteTurn = true;
 		
 		// Initialize the frame
 		JFrame window = new JFrame();
@@ -93,11 +109,7 @@ public class Chess {
 			board[yfrom][kDest] = (fromKing) ? from : to;
 			board[yto][rDest] = (fromKing) ? to : from;
 			
-			bc.repaint();
-			
-			whiteTurn = !whiteTurn;
-			from.firstMove = false;
-			to.firstMove = false;
+			endTurn(board, from, to, true);
 			return true;
 		} else if (standardMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
 			if (from instanceof Pawn && yto == ((from.white) ? 7 : 0)) {
@@ -108,14 +120,45 @@ public class Chess {
 				board[yto][xto] = from;
 			}
 			
-			bc.repaint();
-			
-			// Switch turns and set moved piece's firstMove bool to false 
-			whiteTurn = !whiteTurn;
-			from.firstMove = false;
+			endTurn(board, from, to, false);
 			return true;
 		} else {
 			return false;
+		}
+	}
+	
+	private static void endTurn(Piece[][] board, Piece from, Piece to, boolean castle) {
+		if (to != null)
+			to.firstMove = (castle) ? false : to.firstMove;
+		from.firstMove = false;
+		whiteTurn = !whiteTurn;
+		
+		if (AI && !whiteTurn) {
+			handleAI(board);
+		}
+		
+		bc.repaint();
+	}
+	
+	private static void handleAI(Piece[][] board) {
+		// Competely random, completely stupid AI player
+		Piece[][] AIteam = getTeam(board, false);
+		int xfrom = (int)(Math.random()*8);
+		int yfrom = (int)(Math.random()*8);
+		boolean moved = false;
+		
+		while (!moved) {
+			if (AIteam[yfrom][xfrom] != null) {
+				for (int x = 0; x < 8; x++) {
+					for (int y = 0; y < 8; y++) {
+						moved = move(board, xfrom, yfrom, x, y);
+						if (moved)
+							return;
+					}
+				}
+			}
+			xfrom = (int)(Math.random()*8);
+			yfrom = (int)(Math.random()*8);
 		}
 	}
 	
@@ -280,15 +323,9 @@ public class Chess {
 				Chess.rawMove(xfrom, yfrom, xto, yto);
 			}
 			
-			@Override
-			public void mouseClicked(MouseEvent e) {
-			}
-			@Override
-			public void mouseEntered(MouseEvent e) {
-			}
-			@Override
-			public void mouseExited(MouseEvent e) {
-			}
+			public void mouseClicked(MouseEvent e) {}
+			public void mouseEntered(MouseEvent e) {}
+			public void mouseExited(MouseEvent e) {}
 		};
 	}
 
@@ -338,6 +375,8 @@ public class Chess {
 	
 	private static void tests() {
 		testing = true;
+		boolean AIsetting = AI;
+		AI = false;
 		
 		//
 		// Tests for Piece-level validations
@@ -439,6 +478,7 @@ public class Chess {
 		//
 		whiteTurn = true;
 		testing = false;
+		AI = AIsetting;
 	}
 	
 	private static void testFor(boolean expects, boolean test, String errorMsg) {
