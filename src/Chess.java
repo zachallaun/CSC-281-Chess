@@ -10,6 +10,7 @@
  *    verifies that Kings move out of check if in it, and prevent them
  *    from moving into check.
  * 5) Random computer player
+ * 6) Computer player evaluates moves based on whether it can capture
  */
 
 /*
@@ -23,6 +24,8 @@
 
 /*
  * BUGS:
+ * - IndexOutOfBounds when player drags from outside of board to in the board.
+ *   Not really vital, because it doesn't really have any consequences... but still.
  * - (FIXED) Bishops have trouble moving to their relative diagonal right,
  *   even when not blocked by anything.
  * - (FIXED) Set whiteTurn to false initially for white to start...
@@ -36,11 +39,13 @@
  * - Write tests for bugs fixed
  * - Game can "see" a check-mate and end the game.
  * - Game is stateful: has a MENU, GAMEMODE, and RESTARTMODE
- * - Smart AI
+ * - AI evaluates potential to be captured
  */
 
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+
 import javax.swing.*;
 
 public class Chess {
@@ -56,7 +61,7 @@ public class Chess {
 	private static boolean testing;
 	
 	// AI - AI plays as the black army, player moves first
-	public static boolean AI = false;
+	public static boolean AI = true;
 	
 	public static void main(String[] args) {
 		// Construct chess board
@@ -102,7 +107,7 @@ public class Chess {
 		Piece to = board[yto][xto];
 		boolean capture = (to != null);
 		
-		if (castleMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
+		if (castleMove(board, capture, xfrom, yfrom, xto, yto)) {
 			int kDest, rDest;
 			boolean fromKing;
 			if (from instanceof King) {
@@ -123,7 +128,7 @@ public class Chess {
 			
 			endTurn(board, from, to, true);
 			return true;
-		} else if (standardMove(board, from, to, capture, xfrom, yfrom, xto, yto)) {
+		} else if (standardMove(board, capture, xfrom, yfrom, xto, yto)) {
 			if (from instanceof Pawn && yto == ((from.white) ? 7 : 0)) {
 				board[yfrom][xfrom] = null;
 				board[yto][xto] = new Queen(from.white);
@@ -152,7 +157,7 @@ public class Chess {
 		bc.repaint();
 	}
 	
-	private static void handleAI(Piece[][] board) {
+	private static void randomAI(Piece[][] board) {
 		// Competely random, completely stupid AI player
 		Piece[][] AIteam = getTeam(board, false);
 		int xfrom = (int)(Math.random()*8);
@@ -174,12 +179,74 @@ public class Chess {
 		}
 	}
 	
-	private static boolean standardMove(Piece[][] board, Piece from, Piece to, boolean capture,
-										int xfrom, int yfrom, int xto, int yto) {
+	private static void handleAI(Piece[][] board) {
+		// Evaluate possible moves based on ability to take enemy pieces
+		// and ability to avoid team captures.
+		
+		// First, get all possible moves
+		ArrayList<Move> AImoves = getTeamMoves(board, false);
+		boolean moved = false;
+		
+		// Then, get the best possible move
+		Move best = bestMove(board, AImoves);
+		
+		// Finally, move
+		move(board, best.x, best.y, best.xto, best.yto);
+	}
+	
+	private static Move bestMove(Piece[][] board, ArrayList<Move> moves) {
+		Move best = moves.get(0);
+		
+		for (Move move: moves) {
+			if (move.getScore(board) > best.getScore(board))
+				best = move;
+		}
+		
+		if (best.getScore(board) == 0)
+			best = randomMove(moves);
+		
+		return best;
+	}
+	
+	private static Move randomMove(ArrayList<Move> moves) {
+		return moves.get((int)(Math.random()*moves.size()));
+	}
+	
+	private static ArrayList<Move> getTeamMoves(Piece[][] board, boolean white) {
+		Piece[][] team = getTeam(board, white);
+		ArrayList<Move> moves = new ArrayList<Move>();
+		
+		// Loop through board for origin position
+		for (int x = 0; x < 8; x ++) {
+			for (int y = 0; y < 8; y++) {
+				
+				// Is the piece at the origin a part of the AI team?
+				if (team[y][x] != null) {
+					
+					// If so, push all valid moves into the ArrayList
+					for (int xto = 0; xto < 8; xto++) {
+						for (int yto = 0; yto < 8; yto++) {
+							
+							boolean capture = (board[yto][xto] != null);
+							if (standardMove(board, capture, x, y, xto, yto)) {
+								moves.add(new Move(x, y, xto, yto));
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		return moves;
+	}
+
+	private static boolean standardMove(Piece[][] board, boolean capture, int xfrom, int yfrom, int xto, int yto) {
 		// Validates a standard move given a slew of input.
 		// A standard move follows the general rules of chess, as opposed to fleeing check
 		// or castling a King and Rook, which require alternate validations.
-		
+		Piece from = board[yfrom][xfrom];
+		Piece to = board[yto][xto];
+
 		return (from != null &&											// from isn't null
 				correctTurn(from.white) &&								// correct player's turn
 				from.validMove(xfrom, yfrom, xto, yto, capture) && 		// valid move for that piece
@@ -188,16 +255,17 @@ public class Chess {
 				kingAvoidsCheck(board, from, xfrom, yfrom, xto, yto));
 	}
 	
-	private static boolean castleMove(Piece[][] board, Piece from, Piece to, boolean capture,
-									  int xfrom, int yfrom, int xto, int yto) {
+	private static boolean castleMove(Piece[][] board, boolean capture, int xfrom, int yfrom, int xto, int yto) {
+		Piece from = board[yfrom][xfrom];
+		Piece to = board[yto][xto];
 		
 		return (from != null && to != null &&		
 				correctTurn(from.white) &&								// A valid castle move:
 				from.white == to.white &&								// From and to are same color,
 				(from instanceof King && to instanceof Rook || 			// a king and rook are switching,
 						from instanceof Rook && to instanceof King) &&
-				from.firstMove && to.firstMove &&						// it is both pieces' first move,
-				notBlocked(board, xfrom, yfrom, xto, yto));				// and there is nothing blocking them.
+						from.firstMove && to.firstMove &&						// it is both pieces' first move,
+						notBlocked(board, xfrom, yfrom, xto, yto));				// and there is nothing blocking them.
 	}
 	
 	private static boolean correctTurn(boolean white) {
@@ -484,6 +552,14 @@ public class Chess {
 		testFor(true, move(testBoard, 6, 6, 6, 5), "Pawn can't move forward one space");
 		testFor(true, move(testBoard, 5, 7, 6, 6), "Bishop can't move diagnonally");
 		testFor(true, move(testBoard, 4, 7, 7, 7), "King can't castle rook");
+		
+		//
+		// AI Testing
+		//
+		
+		// AI helper function tests
+		ArrayList<Move> AIMoves = getTeamMoves(testBoard, false);
+		testFor(true, (AIMoves.size() > 0), "getAIMoves doesn't find any valid moves.");
 		
 		//
 		// Reset globals
