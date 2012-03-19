@@ -10,7 +10,9 @@
  *    verifies that Kings move out of check if in it, and prevent them
  *    from moving into check.
  * 5) Random computer player
- * 6) Computer player evaluates moves based on whether it can capture
+ * 6) Computer player evaluates moves based on what it can capture -
+ *    e.g. the computer will prioritize capture of a queen over
+ *    a bishop over a pawn.
  */
 
 /*
@@ -18,8 +20,8 @@
  * - White moves first. All moves should be supported, with the exception of en passant.
  * - The game will prevent a King from moving into check, and will require the King be moved
  *   out of check, but will not verify a checkmate. For now, the players will have to do that.
- * - To play against a completely stupid AI, set 'public static boolean AI' to true. Prepare
- *   to be incredibly bored, as the random AI makes completely nonsensical moves.
+ * - To play against an AI, set public static boolean AI to true. To play against another player,
+ *   set it to false.
  */
 
 /*
@@ -128,6 +130,7 @@ public class Chess {
 			
 			endTurn(board, from, to, true);
 			return true;
+			
 		} else if (standardMove(board, capture, xfrom, yfrom, xto, yto)) {
 			if (from instanceof Pawn && yto == ((from.white) ? 7 : 0)) {
 				board[yfrom][xfrom] = null;
@@ -139,6 +142,7 @@ public class Chess {
 			
 			endTurn(board, from, to, false);
 			return true;
+			
 		} else {
 			return false;
 		}
@@ -185,7 +189,6 @@ public class Chess {
 		
 		// First, get all possible moves
 		ArrayList<Move> AImoves = getTeamMoves(board, false);
-		boolean moved = false;
 		
 		// Then, get the best possible move
 		Move best = bestMove(board, AImoves);
@@ -198,12 +201,21 @@ public class Chess {
 		Move best = moves.get(0);
 		
 		for (Move move: moves) {
-			if (move.getScore(board) > best.getScore(board))
+			Piece toOrig = board[move.yto][move.xto];
+			board[move.yto][move.xto] = board[move.y][move.x];
+			board[move.y][move.x] = null;
+			ArrayList<Move> playerMoves = getTeamMoves(board, true);
+			
+			if (move.getScore(board, playerMoves, toOrig) > best.getScore())
 				best = move;
+			
+			board[move.y][move.x] = board[move.yto][move.xto];
+			board[move.yto][move.xto] = toOrig;
 		}
 		
-		if (best.getScore(board) == 0)
+		if (best.getScore() == 0) {
 			best = randomMove(moves);
+		}
 		
 		return best;
 	}
@@ -281,7 +293,7 @@ public class Chess {
 		
 		boolean ret = true;
 		
-		Piece old = board[yto][xto];
+		Piece toOrig = board[yto][xto];
 		board[yto][xto] = piece;
 		board[yfrom][xfrom] = null;
 		
@@ -306,7 +318,7 @@ public class Chess {
 		}
 		
 		board[yfrom][xfrom] = piece;
-		board[yto][xto] = old;
+		board[yto][xto] = toOrig;
 		
 		return ret;
 	}

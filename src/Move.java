@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 
 public class Move extends Chess {
 	int x, y, xto, yto;
@@ -10,26 +11,46 @@ public class Move extends Chess {
 		this.yto = yto;
 	}
 	
-	public Double getScore(Piece[][] board) {
-		// The first time this is called on a move, it
-		// calculates that move's score, then saves it.
-		return (score != null) ? score : this.calcScore(board);
+	public Double getScore() { return score; }
+	
+	public Double getScore(Piece[][] board, ArrayList<Move> enemyMoves, Piece toOrig) {
+		return this.calcScore(board, enemyMoves, toOrig);
 	}
 	
-	private Double calcScore(Piece[][] board) {
-		Piece to = board[this.yto][this.xto];
-		int baseScore = 0;
+	private Double calcScore(Piece[][] board, ArrayList<Move> enemyMoves, Piece toOrig) {
+		// A move's score is roughly calculated as the benefit of (maybe) capturing
+		// an enemy piece "minus" the potential cost of being captured given a new
+		// board and a set of valid enemy moves.
 		
-		if (to instanceof King) 
+		double baseScore = 0;
+		if (toOrig instanceof King) 
 			baseScore = 10;
-		else if (to instanceof Queen)
+		else if (toOrig instanceof Queen)
 			baseScore = 5;
-		else if (to instanceof Bishop || to instanceof Rook || to instanceof Knight)
+		else if (toOrig instanceof Bishop || toOrig instanceof Rook || toOrig instanceof Knight)
 			baseScore = 3;
-		else if (to instanceof Pawn)
+		else if (toOrig instanceof Pawn)
 			baseScore = 1;
 		
-		this.score = new Double(baseScore);
-		return this.score;
+		double moveCost = 0;
+		
+		// Broken at the moment...
+//		if (enemyMoves != null) {
+//			for (Move move: enemyMoves) {
+//				Piece enemyToOrig = board[move.yto][move.xto];
+//				board[move.yto][move.xto] = board[move.y][move.x];
+//				board[move.y][move.x] = null;
+//				
+//				moveCost = moveCost + move.getScore(board, null, enemyToOrig);
+//
+//				board[move.y][move.x] = board[move.yto][move.xto];
+//				board[move.yto][move.xto] = enemyToOrig;
+//			}
+//			
+//			moveCost = moveCost / enemyMoves.size();
+//		}
+		
+		score = new Double(baseScore - moveCost);
+		return score;
 	}
 }
